@@ -1,0 +1,6 @@
+{"v":1,"type":"create","id":"t-c1375492","at":"2026-10-22T09:30:00.000Z","data":{"area":"parser","title":"Handle empty input","next":"Add regression test","due":"2026-10-23","key":"empty-input"}}
+{"v":1,"type":"update","id":"t-c1375492","at":"2026-10-22T09:30:00.000Z","data":{"next":"Run parser tests"}}
+{"v":1,"type":"note","id":"t-c1375492","at":"2026-10-22T09:30:00.000Z","data":{"note":"Parser fixed; regression test pending"}}
+{"v":1,"type":"create","id":"t-20badff4","at":"2026-10-22T09:30:00.000Z","data":{"area":"docs","title":"Review usage guide","next":"Archive review","due":"2026-10-24"}}
+{"v":1,"type":"update","id":"t-c1375492","at":"2026-10-22T09:30:00.000Z","data":{"status":"waiting"}}
+{"v":1,"type":"close","id":"t-20badff4","at":"2026-10-22T09:30:00.000Z","data":{"status":"done"}}

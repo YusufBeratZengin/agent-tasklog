@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { Tasklog, filterTasks } from '../src/store.js';
 import { replay } from '../src/replay.js';
 import { markdownBoard } from '../src/markdown.js';
-import { validDate, localDate, assertSafe } from '../src/validation.js';
+import { validDate, localDate, assertSafe, resolveDue } from '../src/validation.js';
 import { workspace, input } from '../support/helpers.js';
 
 const now = () => new Date('2026-10-22T09:30:00.000Z');
@@ -88,16 +88,64 @@ test('today and overdue use local dates, exclude closed tasks, and combine with 
 test('markdown preserves board structure and escapes injected markup and line breaks', () => {
   const board = markdownBoard([{ id: 't-12345678', status: 'waiting', area: 'a|b', title: '<script>*x*</script>',
     due: '2026-10-22', next: 'first\nsecond', ref: '[link](x)', notes: [{ text: 'older' }, { text: '`new`' }] }]);
-  assert.match(board, /## Open\n/);
+  assert.doesNotMatch(board, /## Open\n/);
   assert.match(board, /## Waiting\n/);
-  assert.match(board, /## Done\n/);
-  assert.match(board, /## Cancelled\n/);
+  assert.doesNotMatch(board, /## Done\n/);
+  assert.doesNotMatch(board, /## Cancelled\n/);
   assert.match(board, /a&#124;b/);
   assert.match(board, /&lt;script&gt;&#42;x&#42;&lt;\/script&gt;/);
   assert.match(board, /first<br>second/);
   assert.match(board, /&#96;new&#96;/);
   assert.doesNotMatch(board, /older|<script>|\[link\]/);
   assert.ok(board.endsWith('\n'));
+});
+
+test('Markdown omits empty sections and marks a completely empty board', () => {
+  assert.equal(markdownBoard([]), '# Task board\n\n_None_\n');
+  const tasks = ['open', 'waiting', 'done', 'cancelled'].map((status) => ({
+    id: 't-12345678', status, area: 'example', title: 'Example', due: input.due, next: 'Check', notes: [],
+  }));
+  for (const status of ['Open', 'Waiting', 'Done', 'Cancelled']) assert.match(markdownBoard(tasks), new RegExp(`## ${status}\\n`));
+  assert.doesNotMatch(markdownBoard(tasks, ['open', 'waiting']), /## Done|## Cancelled/);
+});
+
+test('relative due dates use the injected local calendar across month, year and DST boundaries', async (t) => {
+  for (const [instant, value, expected] of [
+    [new Date(2026, 11, 31, 23, 59), 'today', '2026-12-31'],
+    [new Date(2026, 11, 31, 23, 59), 'tomorrow', '2027-01-01'],
+    [new Date(2024, 1, 28, 12), '+3d', '2024-03-02'],
+    [new Date(2026, 9, 22, 0, 1), '+1w', '2026-10-29'],
+    [new Date(2026, 2, 7, 12), '+1d', '2026-03-08'],
+    [new Date(2026, 9, 31, 12), '+1d', '2026-11-01'],
+  ]) assert.equal(resolveDue(value, instant), expected);
+  for (const value of ['yesterday', '+1m', '+-1d', '+1.5d', '+999999999999999999d']) {
+    assert.throws(() => resolveDue(value), { code: 'INVALID_DATE' });
+  }
+  const store = new Tasklog({ cwd: await workspace(t), now: () => new Date(2026, 11, 31, 23, 59) });
+  const task = await store.add({ ...input, due: 'tomorrow' });
+  await store.update(task.id, { due: '+1w' });
+  assert.equal((await store.export()).events[0].data.due, '2027-01-01');
+  assert.equal((await store.show(task.id)).due, '2027-01-07');
+});
+
+test('relative dates cross actual DST transitions using calendar days rather than elapsed hours', () => {
+  const previous = process.env.TZ;
+  try {
+    process.env.TZ = 'America/New_York';
+    assert.equal(resolveDue('tomorrow', new Date('2026-03-08T04:30:00Z')), '2026-03-08');
+    assert.equal(resolveDue('+1d', new Date('2026-11-01T04:30:00Z')), '2026-11-02');
+  } finally {
+    if (previous === undefined) delete process.env.TZ;
+    else process.env.TZ = previous;
+  }
+});
+
+test('cost totals remain exact when aggregate micro-units exceed Number safe integer range', async (t) => {
+  const store = new Tasklog({ cwd: await workspace(t), now });
+  for (const amount of ['9000000000', '9000000000', '0.000001']) {
+    await store.addCost({ tool: 'runner', unit: 'credits', amount, note: 'Synthetic precision check' });
+  }
+  assert.deepEqual(await store.totalCosts(), [{ tool: 'runner', unit: 'credits', amount: '18000000000.000001' }]);
 });
 
 test('invalid updates and absent IDs never append events', async (t) => {

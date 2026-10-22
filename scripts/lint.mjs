@@ -2,6 +2,8 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { assertSafe } from '../src/validation.js';
+import { runCLI } from '../src/cli.js';
+import { commandTableErrors } from './readme-commands.mjs';
 
 const project = new URL('../', import.meta.url);
 const { fileURLToPath } = await import('node:url');
@@ -24,11 +26,16 @@ async function inspect(file, source) {
   if (file.endsWith('.json')) {
     try { JSON.parse(source); } catch { report(file, 'Invalid JSON.'); }
   }
+  if (/\.(?:js|mjs)$/.test(file)) {
+    const checked = spawnSync(process.execPath, ['--check', '--input-type=module'], { input: source, encoding: 'utf8' });
+    if (checked.error) report(file, `Cannot run node --check (${checked.error.code}).`);
+    else if (checked.status !== 0) report(file, 'JavaScript syntax check failed (node --check).');
+  }
 }
 
 async function walk(path) {
   for (const item of await readdir(path, { withFileTypes: true })) {
-    if (ignored.has(item.name)) continue;
+    if (ignored.has(item.name) && !(item.name === '.tasklog' && relative(directory, path) === 'examples')) continue;
     const full = join(path, item.name);
     if (item.isDirectory()) await walk(full);
     else if (item.isFile()) await inspect(relative(directory, full), await readFile(full, 'utf8'));
@@ -49,5 +56,12 @@ if (process.argv.includes('--staged')) {
   }
 } else await walk(directory);
 
+let help = '';
+await runCLI(['--help'], { write: (value) => { help = value; } });
+for (const file of ['README.md', 'README.tr.md']) {
+  const source = await readFile(join(directory, file), 'utf8');
+  for (const message of commandTableErrors(help, source)) report(file, message);
+}
+
 if (failures) process.exitCode = 1;
-else console.log(`Lint passed: ${count} files (JSON, whitespace, credential patterns).`);
+else console.log(`Lint passed: ${count} files (JSON, whitespace, credential patterns, node --check, README command tables).`);

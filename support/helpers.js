@@ -30,10 +30,11 @@ export async function processCLI(cwd, args, options = {}) {
   }
 }
 
-export async function cli(cwd, args) {
+export async function cli(cwd, args, options = {}) {
   let stdout = '';
   let stderr = '';
   const code = await runCLI(args, { cwd,
+    ...options,
     write: (value) => { stdout += `${value}\n`; },
     writeError: (value) => { stderr += `${value}\n`; },
   });

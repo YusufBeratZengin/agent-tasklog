@@ -13,3 +13,8 @@ id_rsa*
 id_ed25519*
 .DS_Store
 Thumbs.db
+
+# Versioned synthetic replay fixture only.
+!examples/.tasklog/
+examples/.tasklog/*
+!examples/.tasklog/*.jsonl

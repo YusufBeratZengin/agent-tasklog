@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose an improvement for agent task continuity
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the agent workflow that needs improvement
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the desired behavior and a synthetic example
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Describe other approaches you considered
+    validations:
+      required: true

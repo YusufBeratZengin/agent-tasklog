@@ -64,6 +64,31 @@ export function localDate(now = new Date()) {
   return `${year}-${month}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
+// Resolve only new input; replay continues to require absolute v1 dates.
+export function resolveDue(value, now = new Date()) {
+  if (validDate(value)) return value;
+  const relative = typeof value === 'string' && /^\+(\d+)([dw])$/.exec(value);
+  const days = value === 'today' ? 0 : value === 'tomorrow' ? 1
+    : relative ? Number(relative[1]) * (relative[2] === 'w' ? 7 : 1) : NaN;
+  if (!Number.isSafeInteger(days)) fail('INVALID_DATE', "Option '--due' needs YYYY-MM-DD, today, tomorrow, +Nd, or +Nw.");
+  const date = new Date(now.getTime());
+  date.setDate(date.getDate() + days);
+  const result = localDate(date);
+  if (!validDate(result)) fail('INVALID_DATE', "Option '--due' resolves outside the supported calendar.");
+  return result;
+}
+
+export function microUnits(value) {
+  const [whole, fraction = ''] = String(value).split('.');
+  return BigInt(whole) * 1000000n + BigInt(fraction.padEnd(6, '0'));
+}
+
+export function decimalAmount(micros) {
+  const whole = micros / 1000000n;
+  const fraction = String(micros % 1000000n).padStart(6, '0').replace(/0+$/, '');
+  return `${whole}${fraction ? `.${fraction}` : ''}`;
+}
+
 export const statuses = ['open', 'waiting', 'done', 'cancelled'];
 
 export function taskStatus(value) {

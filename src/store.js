@@ -3,7 +3,7 @@ import { resolve, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { withLock } from './lock.js';
 import { replay, replayCosts, taskFields, changes, costFields } from './replay.js';
-import { fail, textField, localDate } from './validation.js';
+import { fail, textField, localDate, resolveDue, taskStatus, validDate, microUnits, decimalAmount } from './validation.js';
 
 async function readEvents(path) {
   let raw;
@@ -34,10 +34,12 @@ function newId(prefix, existing) {
   return id;
 }
 
-export function filterTasks(tasks, { today = false, overdue = false, area } = {}, now = new Date()) {
+export function filterTasks(tasks, { today = false, overdue = false, area, status = 'all' } = {}, now = new Date()) {
   if (today && overdue) fail('INVALID_INPUT', '--today and --overdue cannot be combined.');
+  const selected = status === 'all' ? undefined : status.split(',').map(taskStatus);
   const date = localDate(now);
   return tasks.filter((task) => (area === undefined || task.area === area)
+    && (!selected || selected.includes(task.status))
     && (!(today || overdue) || ['open', 'waiting'].includes(task.status))
     && (!today || task.due === date)
     && (!overdue || task.due < date))
@@ -61,7 +63,7 @@ export class Tasklog {
   }
 
   async add(input) {
-    const data = taskFields(input);
+    const data = taskFields({ ...input, due: resolveDue(input.due, this.now()) });
     return this.transaction(async ({ events, tasks }) => {
       if (data.key !== undefined) {
         const previous = events.find((event) => event.type === 'create' && event.data.key === data.key);
@@ -80,6 +82,7 @@ export class Tasklog {
 
   async update(id, input) {
     const { note, ...fields } = input;
+    if (fields.due !== undefined) fields.due = resolveDue(fields.due, this.now());
     const patch = Object.keys(fields).length ? changes(fields) : undefined;
     if (note !== undefined) textField(note, 'note');
     if (!patch && note === undefined) fail('INVALID_INPUT', 'Supply --status, --next, --due, or --note.');
@@ -104,7 +107,36 @@ export class Tasklog {
 
   async list(filters = {}) {
     if (filters.today && filters.overdue) fail('INVALID_INPUT', '--today and --overdue cannot be combined.');
-    return this.transaction(({ tasks }) => filterTasks(tasks, filters, this.now()));
+    return this.transaction(({ tasks }) => filterTasks(tasks, { status: 'open,waiting', ...filters }, this.now()));
+  }
+
+  async resume() {
+    return this.transaction(({ tasks }) => {
+      const task = tasks.filter((item) => ['open', 'waiting'].includes(item.status))
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id))[0];
+      return task ? { ...task, notes: task.notes.slice(-3) } : null;
+    });
+  }
+
+  async listCosts({ tool, unit, since } = {}) {
+    if (since !== undefined && !validDate(since)) fail('INVALID_DATE', "Option '--since' needs a real YYYY-MM-DD date.");
+    return this.transaction(({ costs }) => costs.filter((entry) => (tool === undefined || entry.tool === tool)
+      && (unit === undefined || entry.unit === unit)
+      && (since === undefined || entry.at.slice(0, 10) >= since)));
+  }
+
+  async totalCosts({ unit } = {}) {
+    const costs = await this.listCosts({ unit });
+    const groups = new Map();
+    for (const entry of costs) {
+      const key = JSON.stringify([entry.tool, entry.unit]);
+      const group = groups.get(key) ?? { tool: entry.tool, unit: entry.unit, micros: 0n };
+      // v1 stores numeric amounts. Normalize them back to six decimal places.
+      group.micros += microUnits(entry.amount.toFixed(6));
+      groups.set(key, group);
+    }
+    return [...groups.values()].sort((a, b) => a.tool.localeCompare(b.tool) || a.unit.localeCompare(b.unit))
+      .map(({ tool, unit: label, micros }) => ({ tool, unit: label, amount: decimalAmount(micros) }));
   }
 
   async addCost(input) {
