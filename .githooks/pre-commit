@@ -1,0 +1,3 @@
+#!/bin/sh
+# Includes credential-pattern scanning. Never bypass a failed check.
+node scripts/lint.mjs --staged

@@ -1,0 +1,19 @@
+{
+  "name": "agent-tasklog",
+  "version": "0.1.0",
+  "description": "Append-only task and receipt logs for AI coding agents.",
+  "type": "module",
+  "bin": { "tasklog": "bin/tasklog.js" },
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "lint": "node scripts/lint.mjs",
+    "test": "node --test",
+    "prepublishOnly": "npm run lint && npm test"
+  },
+  "files": ["bin/", "src/", "README.md", "README.tr.md", "CHANGELOG.md", "SECURITY.md", "LICENSE"],
+  "repository": { "type": "git", "url": "https://github.com/YusufBeratZengin/agent-tasklog.git" },
+  "bugs": { "url": "https://github.com/YusufBeratZengin/agent-tasklog/issues" },
+  "homepage": "https://github.com/YusufBeratZengin/agent-tasklog#readme",
+  "license": "MIT",
+  "keywords": ["agents", "tasks", "jsonl", "cli", "checkpoints"]
+}
