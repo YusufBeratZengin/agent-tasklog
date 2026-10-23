@@ -233,3 +233,14 @@ test('common credential patterns are rejected in every task and cost text field'
   await assert.rejects(store.update(task.id, { note: synthetic[0] }), { code: 'SECRET_DETECTED' });
   assert.equal((await store.export()).events.length, 1);
 });
+
+test('a UTF-8 byte order mark from Windows editors does not corrupt the log', async (t) => {
+  const cwd = await workspace(t);
+  const store = new Tasklog({ cwd, now });
+  await store.add(input);
+  const path = join(cwd, '.tasklog', 'tasks.jsonl');
+  await writeFile(path, '\uFEFF' + await readFile(path, 'utf8'));
+  assert.equal((await store.list()).length, 1);
+  await store.add({ ...input, title: 'Second' });
+  assert.equal((await store.list()).length, 2);
+});

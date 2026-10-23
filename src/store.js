@@ -11,6 +11,7 @@ async function readEvents(path) {
     if (error.code === 'ENOENT') return [];
     throw error;
   }
+  if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
   if (!raw) return [];
   if (!raw.endsWith('\n')) fail('CORRUPT_LOG', 'Log has an incomplete final line. Restore it before continuing.');
   return raw.slice(0, -1).split('\n').map((line, index) => {
