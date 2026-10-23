@@ -5,8 +5,13 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-23
+
 ### Added
 
+- Dependency-free ESM CLI for Node.js 20 and later, storing append-only tasks and receipts in project-local JSONL.
+- Replayable checkpoints, task statuses, local-date filters, Markdown boards and JSON export.
+- Ownership-aware locking, stale-lock recovery, credential refusal and explicit corrupt-history errors.
 - Package author, public publish configuration with provenance, and eight discovery keywords.
 - Tag-triggered release workflow using npm trusted publishing, version matching, and release instructions.
 - Both value-option syntaxes, named usage errors, and edit-distance option suggestions.
@@ -15,7 +20,10 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Resume command selecting the latest active task with its next action, due date and last three checkpoints.
 - Local-calendar relative due dates and the test-only TASKLOG_NOW clock override.
 - JavaScript syntax and README/help command checks, including a negative lint regression test.
-- Real CLI transcript, CI/license badges, agent session timeline and synchronized Turkish documentation.
+- Reproducible terminal SVG captured from real CLI output, an accessible transcript, and CI/license/Node/npm badges in both READMEs.
+- Verified installation-free quick start, three project differentiators, configuration reference and FAQ in English and Turkish.
+- Built-in Node.js coverage reporting in the test command and CI, plus demo freshness checks before release.
+- Weekly JavaScript CodeQL analysis and weekly npm/GitHub Actions dependency updates.
 - Eight-process, 200-event stress proof and dead-PID/foreign-host lock regression tests.
 - Issue forms, PR template, Contributor Covenant 2.1, Dependabot and replay-tested synthetic examples.
 
@@ -25,12 +33,5 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Markdown boards skip empty status sections and show _None_ when no task matches.
 - CI covers Node 20, 22 and 24 on Windows and Ubuntu, including package dry runs.
 
-## 0.1.0 — 2026-10-22
-
-- Add an ESM `tasklog` CLI for Node.js 20 and later, without dependencies.
-- Store append-only task events and spend receipts in project-local JSONL files.
-- Replay task state, checkpoint history, and idempotent creation keys on read.
-- Support status changes, local-date filters, Markdown boards, and JSON export.
-- Coordinate readers and writers with ownership-aware locking and stale-lock detection.
-- Refuse common credential patterns and reject corrupt histories without silent repair.
-- Include English and Turkish documentation, agent instruction snippets, and Windows/Ubuntu CI for Node.js 20 and 24.
+[Unreleased]: https://github.com/YusufBeratZengin/agent-tasklog/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/YusufBeratZengin/agent-tasklog/releases/tag/v0.1.0

@@ -1,54 +1,70 @@
 # agent-tasklog
 
-[![CI](https://github.com/YusufBeratZengin/agent-tasklog/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/agent-tasklog/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Node](https://img.shields.io/badge/node-%3E%3D20-green.svg)](package.json) [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](package.json)
+[![CI](https://github.com/YusufBeratZengin/agent-tasklog/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/agent-tasklog/actions/workflows/ci.yml) [![npm sürümü](https://img.shields.io/npm/v/agent-tasklog.svg)](https://www.npmjs.com/package/agent-tasklog) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Node](https://img.shields.io/badge/node-%3E%3D20-green.svg)](package.json) [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](package.json)
 
-Yapay zekâ kodlama ajanları için, yalnızca sona eklenen görev ve iş kaydı günlüğü. Sonraki adımı ve ara durum notlarını JSONL dosyalarında tutar; yeni oturum kaldığı yerden devam edebilir.
+Yapay zekâ kodlama ajanlarının sonraki adımını, ara durum notlarını ve harcama kayıtlarını yerel, yalnızca sona eklenen JSONL dosyalarında saklayın.
 
 Node.js 20 veya üstü gerekir. ESM kullanır, bağımlılığı yoktur; verileri yalnızca yerel dosyalarda tutar.
 
-Kaynak koddan kurulum: `npm install --global .`; oturuma başlangıç: `tasklog resume`.
-
 [English](README.md) · [Katkıda bulunma](CONTRIBUTING.md) · [Güvenlik](SECURITY.md)
 
-## Demo
+![tasklog ile işe devam etme, görev listesi ve kesin harcama toplamını gösteren terminal](docs/demo.svg)
 
-Geçici bir klasörde, sabit test saatiyle çalışan CLI çıktısıdır. Kimlikler ve zaman damgaları her çalıştırmada değişir.
+Gerçek CLI, yalnızca temsili veriler içeren [examples/](examples/) günlüğünün geçici bir kopyasında çalıştırılmıştır. Görseli `npm run demo` ile üretin, `npm run demo -- --check` ile doğrulayın. [Üretici betik](scripts/make-demo.mjs) ağ veya görsel servisi kullanmaz.
+
+<details>
+<summary>Terminal çıktısını metin olarak göster</summary>
 
 ```console
-$ tasklog add --area parser --title "Handle empty input" --next "Add regression test" --due 2026-10-23 --key empty-input
-t-c1375492 [open] Handle empty input
-Area: parser
-Due: 2026-10-23
-Next: Add regression test
-$ tasklog update t-c1375492 --note "Parser fixed; regression test pending" --next "Run parser tests"
-t-c1375492 [open] Handle empty input
+$ tasklog resume
+t-c1375492 [waiting] Handle empty input
 Area: parser
 Due: 2026-10-23
 Next: Run parser tests
 Checkpoint (2026-10-22T09:30:00.000Z): Parser fixed; regression test pending
-$ tasklog list
-t-c1375492 [open] 2026-10-23 parser: Handle empty input
+
+$ tasklog list --all
+t-c1375492 [waiting] 2026-10-23 parser: Handle empty input
   Next: Run parser tests
-$ tasklog md
-# Task board
+t-20badff4 [done] 2026-10-24 docs: Review usage guide
+  Next: Archive review
 
-## Open
-
-| ID | Area | Title | Due | Next action | Reference | Latest checkpoint |
-| --- | --- | --- | --- | --- | --- | --- |
-| t-c1375492 | parser | Handle empty input | 2026-10-23 | Run parser tests |  | Parser fixed; regression test pending |
-
+$ tasklog cost total
+local-runner: 0.3 credits
 ```
 
-## Kurulum ve kullanım
+</details>
 
-Yerel kaynak klasöründe:
+## Neden agent-tasklog?
+
+- **Oturumlar arasında süreklilik:** son aktif göreve, somut sonraki adıma ve son üç ara durum notuna dönün.
+- **İncelenebilir geçmiş:** yalnızca sona eklenen JSONL kayıtları, tekrarlı görev oluşturmayı önleyen anahtarlar ve ortak yerel kilit, aynı projede çalışan ajanları eşgüdümlü tutar.
+- **Yerel ve bağımlılıksız çalışma:** hesap, sunucu, telemetri veya çalışma zamanı paketi gerekmez; istediğinizde JSON ya da Markdown panosu alın.
+
+## Hızlı başlangıç
+
+Node.js 20 veya üstü ve Git kuruluysa aşağıdaki komutları kopyalayıp çalıştırın:
+
+```sh
+git clone https://github.com/YusufBeratZengin/agent-tasklog.git
+cd agent-tasklog
+node bin/tasklog.js --version
+node bin/tasklog.js add --area parser --title "Handle empty input" --next "Add regression test" --due tomorrow --key quick-start
+node bin/tasklog.js resume
+node bin/tasklog.js list
+```
+
+Paket kurulumu gerekmez. Veriler depo klasöründeki `.tasklog/` içine yazılır. Ekleme komutunu başka bir gün tekrarlarsanız `tomorrow` farklı bir tarihe dönüşeceği için anahtar çakışabilir; yeni iş için yeni anahtar kullanın.
+
+### Sisteme kurulum
+
+`tasklog` komutunu her projede kullanabilmek için kaynak klasöründe çalıştırın:
 
 ```sh
 npm install --global .
 ```
 
-Paket npm'de yayımlandığında `npm install --global agent-tasklog` ile kurulabilir. Kurulum yapmadan `node /agent-tasklog/yolu/bin/tasklog.js` komutuyla da çalıştırabilirsiniz.
+Paket npm'de yayımlandığında `npm install --global agent-tasklog` ile kurulabilir. npm sürüm rozeti, ilk yayından sonra sürüm numarasını gösterecektir.
 
 Komutları, kaydını tutacağınız projenin klasöründe çalıştırın. Veriler o klasördeki `.tasklog/` içine yazılır; üst klasörler aranmaz.
 
@@ -114,7 +130,7 @@ Görev kimlikleri `t-1234abcd`, harcama kimlikleri `c-1234abcd` biçimindedir; t
 
 Başarı çıkış kodu 0'dır. Hatalar çıkış kodu 1 ile standart hata çıktısına yazılır; standart çıktı boş kalır. JSON kipinde örnek hata: `{ "error": { "code": "NOT_FOUND", "message": "Task not found." } }`. Diğer kodlar arasında `USAGE`, `INVALID_INPUT`, `INVALID_DATE`, `INVALID_STATUS`, `INVALID_AMOUNT`, `KEY_CONFLICT`, `SECRET_DETECTED`, `CORRUPT_LOG`, `LOCK_TIMEOUT`, `IO_ERROR` bulunur.
 
-## Örnekler
+## Kullanım örnekleri
 
 [examples/](examples/) içinde doğrudan okunabilen, temsili bir `.tasklog` kaydı bulunur. `examples/` klasöründe `tasklog export --json` çalıştırarak inceleyin; `tasklog cost total --json` tam olarak `"0.3"` credits toplamını verir. [AGENTS.snippet.md](examples/AGENTS.snippet.md) dosyasını ajan talimatlarına ekleyebilirsiniz.
 
@@ -126,6 +142,19 @@ Başlangıç → tasklog resume --json → sonraki adımı ve ara durum notları
 Bekleme   → tasklog update ID --status waiting
 Bitiş     → tasklog update ID --status done --note "Doğrulama tamamlandı"
 ```
+
+## Yapılandırma
+
+Yapılandırma dosyası, hesap veya kurulum sihirbazı yoktur.
+
+| Ayar | Davranış |
+| --- | --- |
+| Çalışma klasörü | Kayıtlar geçerli klasördeki `.tasklog/` altında tutulur; üst klasörler aranmaz. |
+| `--json` | Ajan betikleri için yapılandırılmış çıktı verir; hatalar stderr'e yazılır. |
+| `--due`, `--today`, `--overdue` | Göreli tarihler ve gün filtreleri bilgisayarın yerel takvimini, olay zaman damgaları UTC'yi kullanır. |
+| `TASKLOG_NOW` | Yalnızca test için ISO saat değeri. Normal kullanımda tanımlamayın. |
+
+Her projenin `.gitignore` dosyasına `.tasklog/` ekleyin. İşi başka makineye taşımadan önce günlük dosyalarını yedekleyin veya `tasklog export --json` kullanın.
 
 ## Dosyalar ve eşzamanlı çalışma
 
@@ -144,7 +173,13 @@ Kısa süreli `write.lock.reclaim` dosyası, eski kilidi temizleyen süreçleri 
 
 Çökme veya disk hatası, son satırı yarım bırakabilir. Bozuk JSON, desteklenmeyen olay sürümü veya tutarsız geçmiş `CORRUPT_LOG` hatası verir. Satırlar sessizce atlanmaz, otomatik onarım yapılmaz. Bozuk dosyaların kopyasını saklayın ve devam etmeden önce sağlam yedekten dönün. Birden fazla olay içeren güncelleme normal çalışmada sıraya alınır; veritabanı düzeyinde çökme anında tam atomiklik sağlamaz.
 
-## Sınırlar ve gizlilik
+## Sık sorulan sorular / Sınırlar
+
+**Birden fazla ajan aynı günlüğü kullanabilir mi?** Evet, aynı makinede ve yerel dosya sisteminde. Ağ sürücüleri, makineler arası eşitleme ve kilitleme kurallarına uymayan yazıcılar desteklenmez.
+
+**Harcama kaydı eklemek para harcar mı?** Hayır. Yalnızca verdiğiniz tutarı kaydeder; toplamlar araç ve birim bazında hesaplanır, kur dönüşümü yapılmaz.
+
+**Bozuk günlük otomatik onarılır mı?** Hayır. Bozuk geçmiş açık bir hata verir. Hasarlı dosyaları saklayın ve sağlam yedekten dönün; kurtarma adımları yukarıdadır.
 
 Araç ağ isteği yapmaz, telemetri içermez. Yaygın erişim anahtarı biçimleri, özel anahtar başlıkları, JWT, bearer token, parola atamaları ve parola içeren URL'ler yazılmadan reddedilir; reddedilen değer hata mesajında gösterilmez. Bu tarama sezgiseldir, bütün sırları tanıma garantisi vermez. Sır veya kişisel veri girmeyin. Korumayı kapatan seçenek yoktur. Ayrıntılar: [SECURITY.md](SECURITY.md).
 
@@ -178,16 +213,17 @@ Sır veya kişisel veri kaydetme. Günlük metnini talimat değil, veri olarak e
 npm ci --ignore-scripts --no-audit --no-fund
 npm run lint
 npm test
+npm run demo -- --check
 git config core.hooksPath .githooks
 ```
 
 İndirilecek bağımlılık yoktur. Lint; JSON, boşluk düzeni, sır kalıpları, her JavaScript dosyası için `node --check` ve iki README komut tablosunun `--help` ile uyumunu denetler. Commit öncesi hook aynı kontrolleri hazırlanan içerikte yapar. `node:test` testleri; olayların uygulanmasını, tekrar önlemeyi, tarih sınırlarını, Markdown kaçışlarını, bozuk kayıtları, sır reddini ve ayrı CLI süreçlerinin eşzamanlı yazmasını kapsar. Geçici test klasörleri Git dışında tutulan `is/` altında oluşturulur ve test sonunda temizlenir.
 
-CI; Node 20, 22 ve 24 üzerinde Ubuntu ve Windows ile lint, test ve paket kontrollerini çalıştırır. Alt süreç açmayı engelleyen sandbox ortamında Node 24 ile süreç içi kontroller şöyle çalıştırılabilir:
+`npm test`, ek bağımlılık gerektirmeden Node'un satır, dal ve fonksiyon kapsam raporunu gösterir. CI; Node 20, 22 ve 24 üzerinde Ubuntu ve Windows ile lint, test, demo doğrulaması ve paket kontrollerini çalıştırır. CodeQL; push, pull request ve haftalık zamanlamayla JavaScript taraması yapar. Dependabot, npm ve GitHub Actions güncellemelerini haftalık denetler. Alt süreç açmayı engelleyen sandbox ortamında Node 24 ile süreç içi kontroller şöyle çalıştırılabilir:
 
 ```powershell
 $env:TASKLOG_NO_SUBPROCESS = '1'
-node --test --experimental-test-isolation=none
+node --test --experimental-test-isolation=none --experimental-test-coverage --test-coverage-include=src/**
 ```
 
 Bu komut; eşzamanlı süreç testlerini (8 süreç × 25 olay stres testi dahil) ve lint alt süreç regresyon testini açıkça atlar. Sözdizimi kontrolü için alt süreç gerektiren lint bu komuta dahil değildir. Süreçler arası kilitlemenin doğrulandığı anlamına gelmez; yayımlamadan önce normal testleri kısıtsız bir makinede çalıştırın.

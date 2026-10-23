@@ -11,12 +11,14 @@
   },
   "scripts": {
     "lint": "node scripts/lint.mjs",
-    "test": "node --test",
+    "test": "node --test --experimental-test-coverage",
+    "demo": "node scripts/make-demo.mjs",
     "prepublishOnly": "npm run lint && npm test"
   },
   "files": [
     "bin/",
     "src/",
+    "docs/demo.svg",
     "README.md",
     "README.tr.md",
     "CHANGELOG.md",

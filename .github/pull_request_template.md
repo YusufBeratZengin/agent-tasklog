@@ -8,6 +8,7 @@ Include the commands run and their results.
 
 - [ ] Regression tests added where needed
 - [ ] Lint and tests pass
+- [ ] Demo matches CLI output (`npm run demo -- --check`)
 - [ ] CHANGELOG updated
 - [ ] English and Turkish documentation updated
 - [ ] No personal data or secrets included
