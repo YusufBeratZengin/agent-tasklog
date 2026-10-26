@@ -1,10 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, writeFile, cp } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { commandTableErrors } from '../scripts/readme-commands.mjs';
 import { captureDemo, renderDemo } from '../scripts/make-demo.mjs';
 import { root, cli, workspace } from '../support/helpers.js';
+
+const exec = promisify(execFile);
+const skip = process.env.TASKLOG_NO_SUBPROCESS === '1' ? 'TASKLOG_NO_SUBPROCESS skips subprocess checks.' : false;
 
 function headingLevels(source) {
   let fenced = false;
@@ -26,6 +31,9 @@ test('both READMEs have matching headings, help tables and the standalone agent 
   const snippet = /```markdown\n([\s\S]*?)```/.exec(en)[1];
   assert.equal(await readFile(join(root, 'examples', 'AGENTS.snippet.md'), 'utf8'), snippet);
   assert.match(snippet, /tasklog resume --json/);
+  const trSnippet = /```markdown\n([\s\S]*?)```/.exec(tr)[1];
+  assert.equal(await readFile(join(root, 'examples', 'AGENTS.snippet.tr.md'), 'utf8'), trSnippet);
+  assert.match(trSnippet, /tasklog resume --json/);
   const copy = join(cwd, 'README.md');
   await writeFile(copy, en);
   const modifiedHelp = help.replace('  tasklog export', '  tasklog inspect\n  tasklog export');
@@ -63,4 +71,10 @@ test('README tasklog usage commands and the runnable snapshot example succeed', 
     const result = await cli(example, command.slice(8).split(' '));
     assert.equal(result.code, 0, result.stderr);
   }
+});
+
+test('agent workflow example runs cleanly and exercises complete lifecycle', { skip }, async () => {
+  const result = await exec(process.execPath, [join(root, 'examples', 'agent-workflow.mjs')]);
+  assert.equal(result.stderr, '');
+  assert.match(result.stdout, /Agent workflow completed successfully\./);
 });

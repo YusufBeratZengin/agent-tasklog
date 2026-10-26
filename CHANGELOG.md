@@ -5,6 +5,14 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Turkish agent prompt snippet fixture (`examples/AGENTS.snippet.tr.md`) matching the Turkish README.
+- Cross-platform Node.js ESM agent workflow example (`examples/agent-workflow.mjs`) demonstrating full task and receipt lifecycle.
+- POSIX shell agent workflow example (`examples/agent-workflow.sh`).
+- Documentation issue template (`.github/ISSUE_TEMPLATE/documentation.yml`).
+- Test coverage for Turkish prompt snippet verification, agent workflow execution, control character validation, and corrupt event envelope edge cases.
+
 ## [0.1.0] - 2026-10-23
 
 ### Added

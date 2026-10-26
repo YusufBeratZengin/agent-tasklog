@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile, appendFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Tasklog, filterTasks } from '../src/store.js';
-import { replay } from '../src/replay.js';
+import { replay, replayCosts } from '../src/replay.js';
 import { markdownBoard } from '../src/markdown.js';
 import { validDate, localDate, assertSafe, resolveDue } from '../src/validation.js';
 import { workspace, input } from '../support/helpers.js';
@@ -83,6 +83,18 @@ test('today and overdue use local dates, exclude closed tasks, and combine with 
   assert.deepEqual(filterTasks(tasks, { area: 'runtime', today: true }, instant).map((item) => item.id), ['b']);
   assert.equal(filterTasks(tasks, {}, instant).length, 6);
   assert.throws(() => filterTasks(tasks, { today: true, overdue: true }, instant), { code: 'INVALID_INPUT' });
+});
+
+test('text fields reject unsupported control characters', async (t) => {
+  const cwd = await workspace(t);
+  const store = new Tasklog({ cwd });
+  for (const char of ['\u0000', '\u0007', '\u0008', '\u000b', '\u000c', '\u000e', '\u001f', '\u007f']) {
+    await assert.rejects(store.add({ ...input, title: `Bad${char}Title` }), { code: 'INVALID_INPUT' });
+    await assert.rejects(store.add({ ...input, area: `area${char}` }), { code: 'INVALID_INPUT' });
+    await assert.rejects(store.add({ ...input, next: `next${char}` }), { code: 'INVALID_INPUT' });
+  }
+  const task = await store.add(input);
+  await assert.rejects(store.update(task.id, { note: 'Note\u0000bad' }), { code: 'INVALID_INPUT' });
 });
 
 test('markdown preserves board structure and escapes injected markup and line breaks', () => {
@@ -184,7 +196,8 @@ test('replay rejects unknown events, duplicate IDs and keys, and dangling change
   const [event] = (await store.export()).events;
   for (const extra of [event, { ...event, id: 't-12345678' }, { ...event, type: 'mystery' },
     { ...event, type: 'note', id: 't-12345678', data: { note: 'Lost' } },
-    { ...event, type: 'close', data: { status: 'open' } }, { ...event, v: 2 }]) {
+    { ...event, type: 'close', data: { status: 'open' } }, { ...event, v: 2 },
+    { ...event, at: 'not-a-date' }, { ...event, at: '2026-10-22' }, { ...event, id: 'bad-id' }]) {
     assert.throws(() => replay([event, extra]), { code: 'CORRUPT_LOG' });
   }
 });
@@ -206,6 +219,15 @@ test('cost ledger records decimal amounts and units separately from tasks', asyn
   const path = join(cwd, '.tasklog', 'costs.jsonl');
   await appendFile(path, '{}\n');
   await assert.rejects(store.export(), { code: 'CORRUPT_LOG' });
+  for (const extra of [
+    { v: 1, type: 'mystery', id: 'c-00000001', at: '2026-10-22T09:30:00.000Z', data: { tool: 'r', amount: 1, unit: 'u', note: 'n' } },
+    { v: 2, type: 'cost', id: 'c-00000002', at: '2026-10-22T09:30:00.000Z', data: { tool: 'r', amount: 1, unit: 'u', note: 'n' } },
+    { v: 1, type: 'cost', id: 'bad-id', at: '2026-10-22T09:30:00.000Z', data: { tool: 'r', amount: 1, unit: 'u', note: 'n' } },
+    { v: 1, type: 'cost', id: 'c-00000003', at: 'invalid-time', data: { tool: 'r', amount: 1, unit: 'u', note: 'n' } },
+    { v: 1, type: 'cost', id: 'c-00000004', at: '2026-10-22T09:30:00.000Z', data: { tool: 'r', amount: 1, unit: 'u' } },
+  ]) {
+    assert.throws(() => replayCosts([extra]), { code: 'CORRUPT_LOG' });
+  }
 });
 
 test('common credential patterns are rejected in every task and cost text field', async (t) => {

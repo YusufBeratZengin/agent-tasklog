@@ -132,7 +132,7 @@ Başarı çıkış kodu 0'dır. Hatalar çıkış kodu 1 ile standart hata çık
 
 ## Kullanım örnekleri
 
-[examples/](examples/) içinde doğrudan okunabilen, temsili bir `.tasklog` kaydı bulunur. `examples/` klasöründe `tasklog export --json` çalıştırarak inceleyin; `tasklog cost total --json` tam olarak `"0.3"` credits toplamını verir. [AGENTS.snippet.md](examples/AGENTS.snippet.md) dosyasını ajan talimatlarına ekleyebilirsiniz.
+[examples/](examples/) içinde doğrudan okunabilen, temsili bir `.tasklog` kaydı bulunur. `examples/` klasöründe `tasklog export --json` çalıştırarak inceleyin; `tasklog cost total --json` tam olarak `"0.3"` credits toplamını verir. Ajan talimatları için [AGENTS.snippet.tr.md](examples/AGENTS.snippet.tr.md) (İngilizce: [AGENTS.snippet.md](examples/AGENTS.snippet.md)) şablonunu kopyalayabilir, çalışan ajan döngüsü örnekleri için [agent-workflow.mjs](examples/agent-workflow.mjs) ve [agent-workflow.sh](examples/agent-workflow.sh) dosyalarını inceleyebilirsiniz.
 
 ## Bir ajan oturumu nasıl ilerler?
 

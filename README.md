@@ -133,7 +133,7 @@ Success exits with status 0. Errors exit with status 1, leave stdout empty, and 
 
 ## Usage examples
 
-[examples/](examples/) contains a synthetic `.tasklog` snapshot that replays without conversion. Run `tasklog export --json` from `examples/` to inspect it; `tasklog cost total --json` reports exactly `"0.3"` credits. Copy [AGENTS.snippet.md](examples/AGENTS.snippet.md) into your agent instructions.
+[examples/](examples/) contains a synthetic `.tasklog` snapshot that replays without conversion. Run `tasklog export --json` from `examples/` to inspect it; `tasklog cost total --json` reports exactly `"0.3"` credits. Copy [AGENTS.snippet.md](examples/AGENTS.snippet.md) into your agent instructions, or see [agent-workflow.mjs](examples/agent-workflow.mjs) and [agent-workflow.sh](examples/agent-workflow.sh) for runnable agent loop workflows.
 
 ## How an agent session looks
 

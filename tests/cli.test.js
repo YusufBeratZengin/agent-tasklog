@@ -79,6 +79,9 @@ test('CLI rejects invalid dates and returns NOT_FOUND for missing tasks', async 
 test('help and version are available without storage writes', async (t) => {
   const cwd = await workspace(t);
   assert.match((await cli(cwd, ['--help'])).stdout, /tasklog update ID/);
+  assert.match((await cli(cwd, [])).stdout, /tasklog 0\.1\.0/);
+  assert.equal(typeof JSON.parse((await cli(cwd, ['--help', '--json'])).stdout).help, 'string');
+  assert.equal((await cli(cwd, ['--version'])).stdout.trim(), '0.1.0');
   assert.equal(JSON.parse((await cli(cwd, ['--version', '--json'])).stdout).version, '0.1.0');
   assert.deepEqual(await readdir(cwd), []);
 });
