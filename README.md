@@ -84,11 +84,12 @@ Use the returned IDs in your commands. Quote text arguments containing spaces. B
 | Command | Arguments and behavior |
 | --- | --- |
 | `add` | Required: `--area`, `--title`, `--next`, `--due DATE`. Optional: `--ref`, `--key`. Creates an open task. |
-| `update <id>` | At least one of `--status open\|waiting\|done\|cancelled`, `--next`, `--due DATE`, `--note`. Notes are timestamped checkpoints. |
+| `update <id>` | At least one of `--status open\|waiting\|done\|cancelled`, `--next`, `--due DATE`, `--note`, `--code NUM`. Notes are timestamped checkpoints. |
 | `show <id>` | Show current fields and every checkpoint. |
 | `list` | **Changed default:** open and waiting tasks only, sorted by due date then ID. `--all` or `--status all` includes every status; `--status open\|waiting\|done\|cancelled\|all` selects one. Optional `--area TEXT`, `--today`, or `--overdue`. |
 | `md` | Markdown board with nonempty sections, references and latest checkpoints. Defaults to every status. `--status open,waiting` selects sections; `--out TASKS.md` atomically replaces a file using a temporary file and rename. Empty board: `_None_`. |
 | `resume` | Most recently updated open or waiting task, next action, due date and last three checkpoints. Ties use ID order. |
+| `migrate` | Convert legacy records or current log to the common record schema with `startedAt`, `finishedAt`, `exitCode`, and `durationMs`. Optional: `--file PATH`, `--out PATH`, `--dry-run`. |
 | `cost add` | Required: `--tool`, `--amount`, `--unit`, `--note`. Record a spend receipt. |
 | `cost list` | Receipts in append order; filter by `--tool X`, `--unit U`, `--since YYYY-MM-DD` (inclusive UTC date). Tool and unit match exactly. |
 | `cost total` | Sum per tool and unit, optionally `--unit U`. Uses integer micro-units with six decimal places; no currency conversion. |
@@ -127,6 +128,7 @@ Task IDs have the form `t-1234abcd`; cost IDs use `c-1234abcd`. IDs must be supp
 - `cost list`: `{ "entries": [ { "id": "c-1234abcd", "at": "2026-10-22T09:30:00.000Z", "tool": "runner", "amount": 0.1, "unit": "USD", "note": "Synthetic receipt" } ] }`
 - `cost total`: `{ "totals": [ { "tool": "runner", "unit": "USD", "amount": "0.3" } ] }`; empty ledgers produce empty arrays
 - `md`: `{ "markdown": "..." }` (also with `--out`; stdout still contains the board)
+- `migrate`: `{ "migrated": 2, "dryRun": false, "records": [ ... ] }` adhering to the common schema with `startedAt`, `finishedAt`, `exitCode`, and `durationMs`
 - `export`: `{ "version": 1, "tasks": [], "costs": [], "events": [], "costEvents": [] }`
 
 Success exits with status 0. Errors exit with status 1, leave stdout empty, and write to stderr. In JSON mode, errors have the shape `{ "error": { "code": "NOT_FOUND", "message": "Task not found." } }`. Other codes include `USAGE`, `INVALID_INPUT`, `INVALID_DATE`, `INVALID_STATUS`, `INVALID_AMOUNT`, `KEY_CONFLICT`, `SECRET_DETECTED`, `CORRUPT_LOG`, `LOCK_TIMEOUT`, and `IO_ERROR`.

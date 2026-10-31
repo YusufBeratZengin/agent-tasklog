@@ -20,12 +20,18 @@ export function taskFields(input) {
 }
 
 export function changes(input) {
-  keys(input, ['status', 'next', 'due'], []);
+  keys(input, ['status', 'next', 'due', 'code', 'exitCode', 'exit-code'], []);
   if (!Object.keys(input).length) fail('INVALID_INPUT', 'No task changes supplied.');
   const result = {};
   if (input.status !== undefined) result.status = taskStatus(input.status);
   if (input.next !== undefined) result.next = textField(input.next, 'next');
   if (input.due !== undefined) result.due = dueDate(input.due);
+  const exit = input.code ?? input.exitCode ?? input['exit-code'];
+  if (exit !== undefined && exit !== null) {
+    const num = Number(exit);
+    if (!Number.isInteger(num)) fail('INVALID_INPUT', 'exit code must be an integer.');
+    result.exitCode = num;
+  }
   return result;
 }
 
@@ -55,7 +61,18 @@ export function replay(events) {
           if (idempotencyKeys.has(fields.key)) fail('CORRUPT_LOG', 'Duplicate idempotency key.');
           idempotencyKeys.add(fields.key);
         }
-        tasks.set(event.id, { id: event.id, ...fields, status: 'open', createdAt: event.at, updatedAt: event.at, notes: [] });
+        tasks.set(event.id, {
+          id: event.id,
+          ...fields,
+          status: 'open',
+          createdAt: event.at,
+          updatedAt: event.at,
+          startedAt: event.at,
+          finishedAt: null,
+          exitCode: null,
+          durationMs: null,
+          notes: [],
+        });
         continue;
       }
       const task = tasks.get(event.id);
@@ -65,6 +82,15 @@ export function replay(events) {
         const terminal = ['done', 'cancelled'].includes(patch.status);
         if ((event.type === 'close') !== terminal) fail('CORRUPT_LOG', 'Invalid close event.');
         Object.assign(task, patch);
+        if (terminal) {
+          task.finishedAt = event.at;
+          task.exitCode = patch.exitCode ?? (patch.status === 'done' ? 0 : 1);
+          task.durationMs = Math.max(0, new Date(task.finishedAt).getTime() - new Date(task.startedAt).getTime());
+        } else if (patch.status && ['open', 'waiting'].includes(patch.status)) {
+          task.finishedAt = null;
+          task.exitCode = null;
+          task.durationMs = null;
+        }
       } else if (event.type === 'note') {
         keys(event.data, ['note']);
         task.notes.push({ at: event.at, text: textField(event.data.note, 'note') });

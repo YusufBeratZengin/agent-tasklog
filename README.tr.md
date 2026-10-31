@@ -83,11 +83,12 @@ Komutlarda dönen gerçek kimlikleri kullanın. Boşluk içeren değerleri tırn
 | Komut | Seçenekler ve davranış |
 | --- | --- |
 | `add` | `--area`, `--title`, `--next`, `--due DATE` zorunludur. `--ref` ve `--key` isteğe bağlıdır. Açık görev oluşturur. |
-| `update <id>` | `--status open\|waiting\|done\|cancelled`, `--next`, `--due`, `--note` seçeneklerinden en az biri gerekir. Notlara zaman damgası eklenir. |
+| `update <id>` | `--status open\|waiting\|done\|cancelled`, `--next`, `--due`, `--note`, `--code NUM` seçeneklerinden en az biri gerekir. Notlara zaman damgası eklenir. |
 | `show <id>` | Güncel alanları ve bütün ara durum notlarını gösterir. |
 | `list` | **Varsayılan değişti:** yalnızca açık ve bekleyen görevleri, önce son tarihe sonra kimliğe göre sıralar. `--all` veya `--status all` bütün durumları getirir; `--status open\|waiting\|done\|cancelled\|all` ile tek durum seçilir. `--area METİN`, `--today` veya `--overdue` ile süzülür. |
 | `md` | Boş bölümleri atlayan Markdown panosu üretir; referans ve son ara durum notunu gösterir. Varsayılan olarak bütün durumları kapsar. `--status open,waiting` bölümleri seçer; `--out TASKS.md` geçici dosya ve rename ile atomik yazar. Boş pano: `_None_`. |
 | `resume` | En son güncellenen açık veya bekleyen görevi, sonraki adımı, son tarihi ve son üç ara durum notunu gösterir. Eşit zaman damgalarında kimlik sırası kullanılır. |
+| `migrate` | Eski kayıtları veya geçerli günlüğü `startedAt`, `finishedAt`, `exitCode` ve `durationMs` içeren ortak kayıt şemasına dönüştürür. İsteğe bağlı: `--file YOL`, `--out YOL`, `--dry-run`. |
 | `cost add` | `--tool`, `--amount`, `--unit`, `--note` zorunludur. Harcama kaydı ekler. |
 | `cost list` | Harcamaları eklenme sırasıyla gösterir; `--tool X`, `--unit U`, `--since YYYY-MM-DD` ile süzülür. Başlangıç günü UTC olarak dahildir. Araç ve birim tam eşleşir. |
 | `cost total` | Araç ve birim başına toplam; isteğe bağlı `--unit U` filtresi. Altı ondalık basamak için tamsayı mikro birimleri kullanır; kur dönüşümü yapmaz. |
@@ -126,6 +127,7 @@ Görev kimlikleri `t-1234abcd`, harcama kimlikleri `c-1234abcd` biçimindedir; t
 - `cost list`: `{ "entries": [ { "id": "c-1234abcd", "at": "2026-10-22T09:30:00.000Z", "tool": "runner", "amount": 0.1, "unit": "USD", "note": "Synthetic receipt" } ] }`
 - `cost total`: `{ "totals": [ { "tool": "runner", "unit": "USD", "amount": "0.3" } ] }`; boş günlükte diziler boş döner
 - `md`: `{ "markdown": "..." }` (`--out` kullanıldığında da stdout panoyu içerir)
+- `migrate`: `startedAt`, `finishedAt`, `exitCode`, `durationMs` içeren ortak şemada `{ "migrated": 2, "dryRun": false, "records": [ ... ] }`
 - `export`: `{ "version": 1, "tasks": [], "costs": [], "events": [], "costEvents": [] }`
 
 Başarı çıkış kodu 0'dır. Hatalar çıkış kodu 1 ile standart hata çıktısına yazılır; standart çıktı boş kalır. JSON kipinde örnek hata: `{ "error": { "code": "NOT_FOUND", "message": "Task not found." } }`. Diğer kodlar arasında `USAGE`, `INVALID_INPUT`, `INVALID_DATE`, `INVALID_STATUS`, `INVALID_AMOUNT`, `KEY_CONFLICT`, `SECRET_DETECTED`, `CORRUPT_LOG`, `LOCK_TIMEOUT`, `IO_ERROR` bulunur.

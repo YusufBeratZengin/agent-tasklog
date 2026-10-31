@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Append-only task and receipt logs for AI coding agents",
   "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./schema": "./src/schema.js"
+  },
   "bin": {
     "tasklog": "bin/tasklog.js"
   },

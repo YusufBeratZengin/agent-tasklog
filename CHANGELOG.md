@@ -7,6 +7,9 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Common record schema definition (`src/schema.js`, Draft 2020-12) defining `startedAt`, `finishedAt`, `exitCode`, and `durationMs` for tasks and execution runs.
+- CLI `migrate` command (with `convert` alias) converting legacy records, JSON snapshots, or JSONL logs to the common record schema with optional `--file`, `--out`, and `--dry-run`.
+- Support for `--code` / `--exit-code` on `tasklog update` and automatic population of execution timestamps, exit codes, and elapsed durations during replay.
 - Turkish agent prompt snippet fixture (`examples/AGENTS.snippet.tr.md`) matching the Turkish README.
 - Cross-platform Node.js ESM agent workflow example (`examples/agent-workflow.mjs`) demonstrating full task and receipt lifecycle.
 - POSIX shell agent workflow example (`examples/agent-workflow.sh`).

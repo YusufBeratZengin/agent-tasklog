@@ -8,11 +8,12 @@ const help = `tasklog 0.1.0 — append-only tasks and receipts
 
 Usage:
   tasklog add --area TEXT --title TEXT --next TEXT --due DATE [--ref TEXT] [--key TEXT]
-  tasklog update ID [--status open|waiting|done|cancelled] [--next TEXT] [--due DATE] [--note TEXT]
+  tasklog update ID [--status open|waiting|done|cancelled] [--next TEXT] [--due DATE] [--note TEXT] [--code NUM]
   tasklog show ID
   tasklog list [--today | --overdue] [--area TEXT] [--status open|waiting|done|cancelled|all | --all]
   tasklog md [--status open,waiting] [--out TASKS.md]
   tasklog resume [--json]
+  tasklog migrate [--file PATH] [--out PATH] [--dry-run]
   tasklog cost add --tool TEXT --amount DECIMAL --unit TEXT --note TEXT
   tasklog cost list [--tool TEXT] [--unit TEXT] [--since YYYY-MM-DD]
   tasklog cost total [--unit TEXT]
@@ -39,8 +40,8 @@ function distance(left, right) {
 function parse(args) {
   const flags = {};
   const positional = [];
-  const booleans = new Set(['json', 'help', 'version', 'today', 'overdue', 'all']);
-  const values = new Set(['area', 'title', 'next', 'due', 'ref', 'key', 'status', 'note', 'tool', 'amount', 'unit', 'since', 'out']);
+  const booleans = new Set(['json', 'help', 'version', 'today', 'overdue', 'all', 'dry-run']);
+  const values = new Set(['area', 'title', 'next', 'due', 'ref', 'key', 'status', 'note', 'tool', 'amount', 'unit', 'since', 'out', 'file', 'code', 'exit-code']);
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];
     if (arg.startsWith('--')) {
@@ -102,7 +103,7 @@ async function main(args, { cwd, write, now }) {
     return;
   }
   const [command, id] = positional;
-  const commands = ['add', 'update', 'show', 'list', 'md', 'resume', 'cost', 'export'];
+  const commands = ['add', 'update', 'show', 'list', 'md', 'resume', 'migrate', 'convert', 'cost', 'export'];
   if (!commands.includes(command)) fail('USAGE', `Unknown command '${command ?? '(missing)'}'. Run tasklog --help.`);
   const expected = ['update', 'show', 'cost'].includes(command) ? 2 : 1;
   if (positional.length > expected) fail('USAGE', `Unexpected argument '${positional[expected]}'. Run tasklog --help.`);
@@ -115,8 +116,8 @@ async function main(args, { cwd, write, now }) {
     const task = await store.add(fields(flags));
     result = { task }; readable = taskText(task);
   } else if (command === 'update') {
-    validate(flags, ['status', 'next', 'due', 'note']);
-    if (!Object.keys(fields(flags)).length) fail('USAGE', `Command 'update' needs '--status', '--next', '--due', or '--note'.`);
+    validate(flags, ['status', 'next', 'due', 'note', 'code', 'exit-code']);
+    if (!Object.keys(fields(flags)).length) fail('USAGE', `Command 'update' needs '--status', '--next', '--due', '--note', or '--code'.`);
     const task = await store.update(id, fields(flags));
     result = { task }; readable = taskText(task);
   } else if (command === 'show') {
@@ -142,6 +143,17 @@ async function main(args, { cwd, write, now }) {
     validate(flags, []);
     const task = await store.resume();
     result = { task }; readable = task ? taskText(task) : 'No active task.';
+  } else if (command === 'migrate' || command === 'convert') {
+    validate(flags, ['file', 'out', 'dry-run']);
+    const migration = await store.migrate(fields(flags));
+    result = migration;
+    if (migration.dryRun) {
+      readable = `Dry run: ${migration.migrated} record${migration.migrated === 1 ? '' : 's'} would be migrated to common schema.`;
+    } else if (migration.migrated > 0) {
+      readable = `Migrated ${migration.migrated} record${migration.migrated === 1 ? '' : 's'} to common schema (startedAt, finishedAt, exitCode, durationMs).`;
+    } else {
+      readable = 'No records to migrate.';
+    }
   } else if (command === 'cost' && id === 'add') {
     validate(flags, ['tool', 'amount', 'unit', 'note'], ['tool', 'amount', 'unit', 'note']);
     const entry = await store.addCost(fields(flags));

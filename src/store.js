@@ -4,6 +4,8 @@ import { randomBytes } from 'node:crypto';
 import { withLock } from './lock.js';
 import { replay, replayCosts, taskFields, changes, costFields } from './replay.js';
 import { fail, textField, localDate, resolveDue, taskStatus, validDate, microUnits, decimalAmount } from './validation.js';
+import { atomicWrite } from './output.js';
+import { toRecord, migrateRecords } from './schema.js';
 
 async function readEvents(path) {
   let raw;
@@ -49,6 +51,7 @@ export function filterTasks(tasks, { today = false, overdue = false, area, statu
 
 export class Tasklog {
   constructor({ cwd = process.cwd(), now = () => new Date(), lockOptions } = {}) {
+    this.cwd = cwd;
     this.directory = resolve(cwd, '.tasklog');
     this.now = now;
     this.lockOptions = lockOptions;
@@ -146,6 +149,42 @@ export class Tasklog {
       const event = { v: 1, type: 'cost', id: newId('c', costs), at: this.now().toISOString(), data };
       await append(join(this.directory, 'costs.jsonl'), [event]);
       return replayCosts([event])[0];
+    });
+  }
+
+  async migrate({ file, out, dryRun, 'dry-run': dryRunKebab } = {}) {
+    const isDryRun = Boolean(dryRun || dryRunKebab);
+    if (file !== undefined) {
+      const sourcePath = resolve(this.cwd, file);
+      let raw;
+      try {
+        raw = await readFile(sourcePath, 'utf8');
+      } catch (err) {
+        if (err.code === 'ENOENT') fail('NOT_FOUND', `File not found: ${file}`);
+        throw err;
+      }
+      if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+      const { records } = migrateRecords(raw);
+      if (!isDryRun) {
+        const dest = resolve(this.cwd, out ?? file);
+        const serialized = dest.endsWith('.jsonl')
+          ? records.map((record) => JSON.stringify(record)).join('\n') + (records.length ? '\n' : '')
+          : JSON.stringify(records, null, 2) + '\n';
+        await atomicWrite(dest, serialized);
+      }
+      return { migrated: records.length, dryRun: isDryRun, records };
+    }
+
+    return this.transaction(async ({ tasks }) => {
+      const records = tasks.map((task) => toRecord(task));
+      if (!isDryRun && records.length > 0) {
+        const dest = resolve(this.cwd, out ?? join(this.directory, 'records.jsonl'));
+        const serialized = dest.endsWith('.jsonl')
+          ? records.map((record) => JSON.stringify(record)).join('\n') + (records.length ? '\n' : '')
+          : JSON.stringify(records, null, 2) + '\n';
+        await atomicWrite(dest, serialized);
+      }
+      return { migrated: records.length, dryRun: isDryRun, records };
     });
   }
 
